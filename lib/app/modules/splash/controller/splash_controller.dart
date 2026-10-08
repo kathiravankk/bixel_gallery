@@ -3,6 +3,8 @@ import 'package:get/get.dart';
 import 'package:image_gallery_app/app/routes/app_pages.dart';
 
 class SplashController extends GetxController {
+  Timer? _timer;
+
   @override
   void onInit() {
     super.onInit();
@@ -10,8 +12,14 @@ class SplashController extends GetxController {
   }
 
   void _startTimer() {
-    Timer(const Duration(milliseconds: 1800), () {
-      Get.offNamed(AppRoutes.galleryHome);
+    _timer = Timer(const Duration(milliseconds: 1800), () {
+      Get.offAllNamed(AppRoutes.galleryHome);
     });
+  }
+
+  @override
+  void onClose() {
+    _timer?.cancel();
+    super.onClose();
   }
 }

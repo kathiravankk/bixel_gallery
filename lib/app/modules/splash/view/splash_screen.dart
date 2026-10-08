@@ -9,6 +9,7 @@ class SplashScreen extends GetView<SplashController> {
 
   @override
   Widget build(BuildContext context) {
+    controller; // Ensures SplashController is instantiated immediately
     return Scaffold(
       backgroundColor: AppColors.darkScaffold,
       body: Stack(

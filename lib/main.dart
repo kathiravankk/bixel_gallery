@@ -1,21 +1,17 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:get/get.dart';
+import 'package:image_gallery_app/app/core/bindings/initial_binding.dart';
 import 'app/core/theme/app_theme.dart';
-import 'app/core/theme/theme_controller.dart';
 import 'app/routes/app_pages.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
-  // Set system orientations
   await SystemChrome.setPreferredOrientations([
     DeviceOrientation.portraitUp,
     DeviceOrientation.portraitDown,
   ]);
-
-  // Global theme controller
-  Get.put<ThemeController>(ThemeController(), permanent: true);
 
   runApp(const MyApp());
 }
@@ -37,6 +33,7 @@ class MyApp extends StatelessWidget {
       onTap: () => FocusScope.of(context).unfocus(),
       child: GetMaterialApp(
         title: 'PixGallery',
+        initialBinding: AppInitialBindings(),
         debugShowCheckedModeBanner: false,
         theme: AppTheme.lightTheme,
         darkTheme: AppTheme.darkTheme,
