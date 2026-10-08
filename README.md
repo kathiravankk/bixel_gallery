@@ -123,7 +123,7 @@ lib/
    - **Method A (In-App):** Launch the app, tap the **Key (🔑)** icon in the top AppBar, enter your Pixabay API key, and tap **Save & Apply**.
    - **Method B (In Code):** Open `lib/app/core/utils/app_api_urls.dart` and set `pixabayApiKey`:
      ```dart
-     static String pixabayApiKey = "YOUR_PIXABAY_API_KEY";
+     static String pixabayApiKey = "57938336-f73ab27d6556dddd0bf6d9ee9";
      ```
    > **Note:** If no key is provided, the application automatically runs in **Curated High-Definition Demo Mode** with full pagination, category filtering, search, downloading, and bookmarking functionality intact!
 

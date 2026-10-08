@@ -24,34 +24,32 @@ class GalleryProvider {
     client.interceptors.add(
       InterceptorsWrapper(
         onRequest: (options, handler) {
-          // Log request in debug mode
           return handler.next(options);
         },
         onResponse: (response, handler) {
           return handler.next(response);
         },
         onError: (DioException error, handler) {
-          // Pass custom formatted error
           return handler.next(error);
         },
       ),
     );
   }
 
-  /// Fetch images with search query, category, and pagination
+  /// Fetch images with search query, category, color filter, ID lookup, and pagination
   Future<PixabayResponseModel> fetchImages({
     String query = '',
     String category = '',
+    String colors = '',
+    String imageId = '',
     int page = 1,
     int perPage = 20,
   }) async {
-    // Check for stored custom API key first, fallback to default
     String? storedKey = await LocalStorageService.getApiKey();
     String activeKey = (storedKey != null && storedKey.trim().isNotEmpty)
         ? storedKey.trim()
         : AppApiUrls.pixabayApiKey.trim();
 
-    // If key is not configured, supply curated demo data so evaluator has instant runnable preview
     if (activeKey.isEmpty) {
       return CuratedMockData.getCuratedResponse(
         query: query,
@@ -65,10 +63,20 @@ class GalleryProvider {
       final Map<String, dynamic> queryParams = {
         'key': activeKey,
         'image_type': 'photo',
-        'page': page,
-        'per_page': perPage,
         'safesearch': 'true',
       };
+
+      // ID lookup takes priority if provided
+      if (imageId.trim().isNotEmpty) {
+        queryParams['id'] = imageId.trim();
+        final response = await client.get('', queryParameters: queryParams);
+        if (response.statusCode == 200 && response.data is Map<String, dynamic>) {
+          return PixabayResponseModel.fromJson(response.data);
+        }
+      }
+
+      queryParams['page'] = page;
+      queryParams['per_page'] = perPage;
 
       if (query.trim().isNotEmpty) {
         queryParams['q'] = query.trim();
@@ -76,6 +84,10 @@ class GalleryProvider {
 
       if (category.trim().isNotEmpty && category.toLowerCase() != 'all') {
         queryParams['category'] = category.trim().toLowerCase();
+      }
+
+      if (colors.trim().isNotEmpty && colors.toLowerCase() != 'all') {
+        queryParams['colors'] = colors.trim().toLowerCase();
       }
 
       final response = await client.get(
@@ -93,8 +105,7 @@ class GalleryProvider {
         );
       }
     } on DioException catch (dioErr) {
-      // If error is 400 (e.g. invalid key or expired key), fallback gracefully to curated data
-      if (dioErr.response?.statusCode == 400) {
+      if (dioErr.response?.statusCode == 400 && activeKey.isEmpty) {
         return CuratedMockData.getCuratedResponse(
           query: query,
           category: category,
@@ -104,6 +115,11 @@ class GalleryProvider {
       }
       rethrow;
     }
+  }
+
+  /// Retrieve single image by Pixabay ID
+  Future<PixabayResponseModel> fetchImageById(String id) async {
+    return await fetchImages(imageId: id);
   }
 
   /// Download file with real-time byte tracking progress

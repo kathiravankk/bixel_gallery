@@ -1,16 +1,18 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_staggered_grid_view/flutter_staggered_grid_view.dart';
 import 'package:get/get.dart';
+import 'package:skeletonizer/skeletonizer.dart';
 import 'package:image_gallery_app/app/core/theme/theme_controller.dart';
 import 'package:image_gallery_app/app/core/utils/app_colors.dart';
 import 'package:image_gallery_app/app/core/utils/app_styles.dart';
-import 'package:image_gallery_app/app/core/widgets/custom_shimmer.dart';
 import 'package:image_gallery_app/app/modules/favorites/controller/favorites_controller.dart';
 import 'package:image_gallery_app/app/modules/gallery/controller/gallery_controller.dart';
 import 'package:image_gallery_app/app/routes/app_pages.dart';
 import 'widgets/api_key_settings_sheet.dart';
 import 'widgets/category_chips_widget.dart';
+import 'widgets/color_filter_bar_widget.dart';
 import 'widgets/image_grid_card.dart';
+import 'widgets/image_id_search_dialog.dart';
 import 'widgets/search_field_widget.dart';
 
 class GalleryHomeScreen extends GetView<GalleryController> {
@@ -73,6 +75,22 @@ class GalleryHomeScreen extends GetView<GalleryController> {
           ],
         ),
         actions: [
+          // Lookup by Image ID
+          IconButton(
+            icon: Icon(
+              Icons.tag_rounded,
+              color: isDark ? AppColors.whiteColor : AppColors.blackColor,
+              size: 22,
+            ),
+            tooltip: "Lookup by Image ID",
+            onPressed: () {
+              showDialog(
+                context: context,
+                builder: (_) => const ImageIdSearchDialog(),
+              );
+            },
+          ),
+
           // Theme Toggle Button
           Obx(() => IconButton(
                 icon: Icon(
@@ -149,18 +167,22 @@ class GalleryHomeScreen extends GetView<GalleryController> {
             const SizedBox(height: 8),
             // Search Bar
             const SearchFieldWidget(),
-            const SizedBox(height: 14),
+            const SizedBox(height: 12),
 
             // Category Horizontal Filter Bar
             const CategoryChipsWidget(),
-            const SizedBox(height: 12),
+            const SizedBox(height: 10),
+
+            // Color Properties Filter Bar
+            const ColorFilterBarWidget(),
+            const SizedBox(height: 10),
 
             // Main Content Area
             Expanded(
               child: Obx(() {
-                // Initial Loading Shimmer Grid
+                // Skeletonizer Loading Grid
                 if (controller.isLoading.value) {
-                  return _buildShimmerGrid(context);
+                  return _buildSkeletonGrid(context);
                 }
 
                 // Error State View
@@ -242,22 +264,57 @@ class GalleryHomeScreen extends GetView<GalleryController> {
     );
   }
 
-  Widget _buildShimmerGrid(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-      child: MasonryGridView.count(
-        crossAxisCount: _getCrossAxisCount(context),
-        mainAxisSpacing: 14,
-        crossAxisSpacing: 14,
-        itemCount: 8,
-        itemBuilder: (context, index) {
-          final heights = [220.0, 160.0, 260.0, 180.0, 240.0, 170.0, 210.0, 190.0];
-          return CustomShimmer(
-            width: double.infinity,
-            height: heights[index % heights.length],
-            borderRadius: BorderRadius.circular(16),
-          );
-        },
+  /// Skeletonizer placeholder grid while images load
+  Widget _buildSkeletonGrid(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
+    return Skeletonizer(
+      enabled: true,
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+        child: MasonryGridView.count(
+          crossAxisCount: _getCrossAxisCount(context),
+          mainAxisSpacing: 14,
+          crossAxisSpacing: 14,
+          itemCount: 8,
+          itemBuilder: (context, index) {
+            final heights = [220.0, 160.0, 260.0, 180.0, 240.0, 170.0, 210.0, 190.0];
+            return Container(
+              height: heights[index % heights.length],
+              decoration: BoxDecoration(
+                color: isDark ? AppColors.darkCard : AppColors.lightCard,
+                borderRadius: BorderRadius.circular(16),
+              ),
+              padding: const EdgeInsets.all(12),
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.end,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      Container(
+                        width: 22,
+                        height: 22,
+                        decoration: const BoxDecoration(
+                          shape: BoxShape.circle,
+                          color: Colors.grey,
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      const Expanded(
+                        child: Text(
+                          "Loading Creator Name",
+                          maxLines: 1,
+                          style: TextStyle(fontSize: 11),
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            );
+          },
+        ),
       ),
     );
   }
@@ -364,7 +421,7 @@ class GalleryHomeScreen extends GetView<GalleryController> {
             Text(
               controller.searchQuery.value.isNotEmpty
                   ? "We couldn't find any photos matching '${controller.searchQuery.value}'."
-                  : "No images available in this category.",
+                  : "No images available for the selected filters.",
               textAlign: TextAlign.center,
               style: AppStyles.customTextStyle(
                 size: 13,
@@ -374,9 +431,9 @@ class GalleryHomeScreen extends GetView<GalleryController> {
             ),
             const SizedBox(height: 20),
             TextButton(
-              onPressed: controller.clearSearch,
+              onPressed: controller.resetFilters,
               child: Text(
-                "Clear Search Filter",
+                "Reset All Filters",
                 style: AppStyles.customTextStyle(
                   size: 14,
                   weight: FontWeight.w600,

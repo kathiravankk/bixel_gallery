@@ -288,6 +288,14 @@ class ImageDetailScreen extends StatelessWidget {
                             ? CommonUtils.formatBytes(image.imageSize)
                             : "High Res",
                       ),
+                      const SizedBox(width: 10),
+                      _buildStatTile(
+                        context,
+                        icon: Icons.tag_rounded,
+                        iconColor: AppColors.primaryColor,
+                        title: "Image ID",
+                        value: "#${image.id}",
+                      ),
                     ],
                   ),
                   const SizedBox(height: 22),

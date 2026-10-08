@@ -9,19 +9,28 @@ class GalleryRepository {
 
   GalleryRepository({required this.galleryProvider});
 
-  /// Fetch images with search, filter, and pagination
+  /// Fetch images with search, category, color filter, ID lookup, and pagination
   Future<PixabayResponseModel> fetchImages({
     String query = '',
     String category = '',
+    String colors = '',
+    String imageId = '',
     int page = 1,
     int perPage = 20,
   }) async {
     return await galleryProvider.fetchImages(
       query: query,
       category: category,
+      colors: colors,
+      imageId: imageId,
       page: page,
       perPage: perPage,
     );
+  }
+
+  /// Retrieve individual image by Pixabay ID
+  Future<PixabayResponseModel> fetchImageById(String id) async {
+    return await galleryProvider.fetchImageById(id);
   }
 
   /// Download image file

@@ -7,11 +7,11 @@ import 'package:path_provider/path_provider.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:share_plus/share_plus.dart';
 
-import '../../../core/utils/app_alert_utils.dart';
-import '../../../core/utils/common_utils.dart';
-import '../../../data/models/pixabay_image_model.dart';
-import '../../../data/repositories/gallery_repository.dart';
-import '../../favorites/controller/favorites_controller.dart';
+import 'package:image_gallery_app/app/core/utils/app_alert_utils.dart';
+import 'package:image_gallery_app/app/core/utils/common_utils.dart';
+import 'package:image_gallery_app/app/data/models/pixabay_image_model.dart';
+import 'package:image_gallery_app/app/data/repositories/gallery_repository.dart';
+import 'package:image_gallery_app/app/modules/favorites/controller/favorites_controller.dart';
 
 class GalleryController extends GetxController {
   final GalleryRepository repository;
@@ -26,19 +26,52 @@ class GalleryController extends GetxController {
   final RxInt currentPage = 1.obs;
   final RxString searchQuery = ''.obs;
   final RxString selectedCategory = 'All'.obs;
+  final RxString selectedColor = 'All'.obs;
   final RxBool hasError = false.obs;
   final RxString errorMessage = ''.obs;
 
-  // Categories list matching Pixabay standard categories
+  // Exact Pixabay Accepted Categories
   final List<String> categories = [
     'All',
+    'Backgrounds',
+    'Fashion',
     'Nature',
-    'Architecture',
+    'Science',
+    'Education',
+    'Feelings',
+    'Health',
+    'People',
+    'Religion',
+    'Places',
     'Animals',
-    'Travel',
-    'Technology',
+    'Industry',
+    'Computer',
     'Food',
     'Sports',
+    'Transportation',
+    'Travel',
+    'Buildings',
+    'Business',
+    'Music',
+  ];
+
+  // Exact Pixabay Accepted Colors
+  final List<String> colorOptions = [
+    'All',
+    'Grayscale',
+    'Transparent',
+    'Red',
+    'Orange',
+    'Yellow',
+    'Green',
+    'Turquoise',
+    'Blue',
+    'Lilac',
+    'Pink',
+    'White',
+    'Gray',
+    'Black',
+    'Brown',
   ];
 
   // Search & Pagination Controllers
@@ -61,7 +94,6 @@ class GalleryController extends GetxController {
 
   void _setupScrollListener() {
     scrollController.addListener(() {
-      // Trigger load more when 300px away from bottom
       if (scrollController.position.pixels >=
               scrollController.position.maxScrollExtent - 300 &&
           !isLoading.value &&
@@ -83,9 +115,16 @@ class GalleryController extends GetxController {
     }
 
     try {
+      final query = searchQuery.value.trim();
+      final isIdQuery = RegExp(r"^[0-9]+$").hasMatch(query) || (query.startsWith("#") && RegExp(r"^[0-9]+$").hasMatch(query.substring(1)));
+      final idParam = isIdQuery ? (query.startsWith("#") ? query.substring(1) : query) : '';
+      final queryParam = isIdQuery ? '' : query;
+
       final response = await repository.fetchImages(
-        query: searchQuery.value,
+        query: queryParam,
         category: selectedCategory.value,
+        colors: selectedColor.value,
+        imageId: idParam,
         page: currentPage.value,
         perPage: 20,
       );
@@ -96,8 +135,7 @@ class GalleryController extends GetxController {
         images.addAll(response.hits);
       }
 
-      // Check if more items exist
-      if (response.hits.length < 20 || images.length >= response.totalHits) {
+      if (response.hits.length < 20 || images.length >= response.totalHits || isIdQuery) {
         hasMore.value = false;
       }
       hasError.value = false;
@@ -107,7 +145,7 @@ class GalleryController extends GetxController {
       AppAlertUtils.showToast(message: errorMessage.value, isError: true);
     } catch (e) {
       hasError.value = true;
-      errorMessage.value = "Failed to load images. Please try again.";
+      errorMessage.value = 'Failed to load images. Please try again.';
       AppAlertUtils.showToast(message: errorMessage.value, isError: true);
     } finally {
       isLoading.value = false;
@@ -123,9 +161,17 @@ class GalleryController extends GetxController {
     currentPage.value++;
 
     try {
+      final query = searchQuery.value.trim();
+      final isIdQuery = RegExp(r"^[0-9]+$").hasMatch(query);
+      if (isIdQuery) {
+        hasMore.value = false;
+        return;
+      }
+
       final response = await repository.fetchImages(
-        query: searchQuery.value,
+        query: query,
         category: selectedCategory.value,
+        colors: selectedColor.value,
         page: currentPage.value,
         perPage: 20,
       );
@@ -139,15 +185,15 @@ class GalleryController extends GetxController {
         }
       }
     } on DioException {
-      currentPage.value--; // Revert page on failure
+      currentPage.value--;
       AppAlertUtils.showToast(
-        message: "Failed to load more images. Check network.",
+        message: 'Failed to load more images. Check network.',
         isError: true,
       );
     } catch (e) {
       currentPage.value--;
       AppAlertUtils.showToast(
-        message: "Unable to load next page",
+        message: 'Unable to load next page',
         isError: true,
       );
     } finally {
@@ -167,6 +213,13 @@ class GalleryController extends GetxController {
     });
   }
 
+  /// Direct search by Pixabay Image ID
+  void searchById(String id) {
+    searchController.text = id.trim();
+    searchQuery.value = id.trim();
+    fetchImages(isRefresh: true);
+  }
+
   /// Clear search input
   void clearSearch() {
     searchController.clear();
@@ -178,6 +231,22 @@ class GalleryController extends GetxController {
   void selectCategory(String category) {
     if (selectedCategory.value == category) return;
     selectedCategory.value = category;
+    fetchImages(isRefresh: true);
+  }
+
+  /// Select color property filter
+  void selectColor(String color) {
+    if (selectedColor.value == color) return;
+    selectedColor.value = color;
+    fetchImages(isRefresh: true);
+  }
+
+  /// Reset all filters to default
+  void resetFilters() {
+    selectedCategory.value = 'All';
+    selectedColor.value = 'All';
+    searchController.clear();
+    searchQuery.value = '';
     fetchImages(isRefresh: true);
   }
 
@@ -200,23 +269,22 @@ class GalleryController extends GetxController {
   Future<void> shareImage(PixabayImageModel image) async {
     try {
       final shareText =
-          "Check out this high quality photo by ${image.user} on PixGallery: ${image.largeImageURL}";
+          "Check out this high quality photo by ${image.user} (ID: ${image.id}) on PixGallery: ${image.largeImageURL}";
       await Share.share(shareText, subject: "Photo by ${image.user}");
     } catch (e) {
-      AppAlertUtils.showToast(message: "Failed to share photo", isError: true);
+      AppAlertUtils.showToast(message: 'Failed to share photo', isError: true);
     }
   }
 
   /// Download high resolution image with real-time percentage progress
   Future<void> downloadImage(PixabayImageModel image) async {
     try {
-      // Request permission on mobile platforms
       if (Platform.isAndroid) {
         final status = await Permission.storage.request();
         final photosStatus = await Permission.photos.request();
         if (status.isPermanentlyDenied || photosStatus.isPermanentlyDenied) {
           AppAlertUtils.showToast(
-            message: "Storage permission needed to save image. Please enable in Settings.",
+            message: 'Storage permission needed to save image. Please enable in Settings.',
             isError: true,
           );
           return;
@@ -228,7 +296,6 @@ class GalleryController extends GetxController {
       downloadProgressText.value = 'Connecting...';
       _downloadCancelToken = CancelToken();
 
-      // Show download progress dialog
       Get.dialog(
         _buildDownloadProgressDialog(),
         barrierDismissible: false,
@@ -259,16 +326,16 @@ class GalleryController extends GetxController {
       if (Get.isDialogOpen ?? false) Get.back();
 
       AppAlertUtils.showToast(
-        message: "Image saved successfully!",
+        message: 'Image saved successfully!',
         isError: false,
       );
     } on DioException catch (e) {
       if (Get.isDialogOpen ?? false) Get.back();
       if (CancelToken.isCancel(e)) {
-        AppAlertUtils.showToast(message: "Download cancelled", isError: false);
+        AppAlertUtils.showToast(message: 'Download cancelled', isError: false);
       } else {
         AppAlertUtils.showToast(
-          message: "Failed to download image. Try again.",
+          message: 'Failed to download image. Try again.',
           isError: true,
         );
       }
@@ -290,7 +357,6 @@ class GalleryController extends GetxController {
     if (Get.isDialogOpen ?? false) Get.back();
   }
 
-  /// Download progress dialog widget
   Widget _buildDownloadProgressDialog() {
     return PopScope(
       canPop: false,
@@ -345,7 +411,7 @@ class GalleryController extends GetxController {
         return "Connection timed out. Check your internet connection.";
       case DioExceptionType.badResponse:
         final status = dioErr.response?.statusCode;
-        if (status == 400) return "Invalid API key provided. Please verify in settings.";
+        if (status == 400) return "Invalid parameters or API key.";
         if (status == 429) return "Rate limit exceeded. Please wait a moment.";
         return "Server returned error: $status";
       case DioExceptionType.connectionError:

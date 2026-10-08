@@ -1,7 +1,7 @@
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
+import 'package:skeletonizer/skeletonizer.dart';
 import '../utils/app_colors.dart';
-import 'custom_shimmer.dart';
 
 class CustomNetworkImage extends StatelessWidget {
   final String imageUrl;
@@ -34,10 +34,18 @@ class CustomNetworkImage extends StatelessWidget {
       memCacheHeight: memCacheHeight,
       fadeInDuration: const Duration(milliseconds: 250),
       fadeOutDuration: const Duration(milliseconds: 150),
-      placeholder: (context, url) => CustomShimmer(
-        width: width ?? double.infinity,
-        height: height ?? double.infinity,
-        borderRadius: borderRadius ?? BorderRadius.zero,
+      placeholder: (context, url) => Skeletonizer(
+        enabled: true,
+        child: Container(
+          width: width ?? double.infinity,
+          height: height ?? double.infinity,
+          decoration: BoxDecoration(
+            color: Theme.of(context).brightness == Brightness.dark
+                ? AppColors.darkSurface
+                : AppColors.lightSurface,
+            borderRadius: borderRadius ?? BorderRadius.zero,
+          ),
+        ),
       ),
       errorWidget: (context, url, error) => Container(
         width: width,
