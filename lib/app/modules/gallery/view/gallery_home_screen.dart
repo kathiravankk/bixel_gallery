@@ -38,15 +38,24 @@ class GalleryHomeScreen extends GetView<GalleryController> {
         title: Row(
           children: [
             Container(
-              padding: const EdgeInsets.all(7),
+              width: 34,
+              height: 34,
               decoration: BoxDecoration(
-                gradient: AppColors.primaryGradient,
-                borderRadius: BorderRadius.circular(10),
+                borderRadius: BorderRadius.circular(9),
+                boxShadow: [
+                  BoxShadow(
+                    color: AppColors.primaryColor.withValues(alpha: 0.25),
+                    blurRadius: 8,
+                    offset: const Offset(0, 2),
+                  ),
+                ],
               ),
-              child: const Icon(
-                Icons.photo_library_rounded,
-                size: 20,
-                color: AppColors.blackColor,
+              child: ClipRRect(
+                borderRadius: BorderRadius.circular(9),
+                child: Image.asset(
+                  'assets/images/app_icon.png',
+                  fit: BoxFit.cover,
+                ),
               ),
             ),
             const SizedBox(width: 10),
