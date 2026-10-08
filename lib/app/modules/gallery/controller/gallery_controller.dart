@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:io';
 import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:get/get.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:permission_handler/permission_handler.dart';
@@ -265,14 +266,50 @@ class GalleryController extends GetxController {
     return false;
   }
 
-  /// Share image URL
-  Future<void> shareImage(PixabayImageModel image) async {
+  /// Share image URL and details
+  Future<void> shareImage(PixabayImageModel image, {Rect? sharePositionOrigin}) async {
+    final photoUrl = image.largeImageURL.isNotEmpty
+        ? image.largeImageURL
+        : image.webformatURL;
+    final shareText =
+        "Check out this high quality photo by ${image.user} (ID: #${image.id}) on PixGallery: $photoUrl";
+
     try {
-      final shareText =
-          "Check out this high quality photo by ${image.user} (ID: ${image.id}) on PixGallery: ${image.largeImageURL}";
-      await Share.share(shareText, subject: "Photo by ${image.user}");
+      final origin = sharePositionOrigin ??
+          Rect.fromLTWH(
+            0,
+            0,
+            Get.width > 0 ? Get.width : 400,
+            (Get.height > 0 ? Get.height : 600) / 2,
+          );
+
+      final result = await Share.share(
+        shareText,
+        subject: "Photo by ${image.user} - PixGallery",
+        sharePositionOrigin: origin,
+      );
+
+      if (result.status == ShareResultStatus.success) {
+        AppAlertUtils.showToast(
+          message: 'Photo link shared successfully!',
+          isError: false,
+        );
+      }
     } catch (e) {
-      AppAlertUtils.showToast(message: 'Failed to share photo', isError: true);
+      debugPrint("Error sharing photo: $e");
+      // Fallback: copy photo link to clipboard so the user is never stuck
+      try {
+        await Clipboard.setData(ClipboardData(text: photoUrl));
+        AppAlertUtils.showToast(
+          message: 'Photo link copied to clipboard!',
+          isError: false,
+        );
+      } catch (_) {
+        AppAlertUtils.showToast(
+          message: 'Failed to share photo',
+          isError: true,
+        );
+      }
     }
   }
 

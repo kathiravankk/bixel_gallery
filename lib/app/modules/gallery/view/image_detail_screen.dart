@@ -49,9 +49,20 @@ class ImageDetailScreen extends StatelessWidget {
           }),
 
           // Share Button
-          IconButton(
-            icon: const Icon(Icons.share_rounded, size: 22),
-            onPressed: () => galleryController.shareImage(image),
+          Builder(
+            builder: (btnContext) {
+              return IconButton(
+                icon: const Icon(Icons.share_rounded, size: 22),
+                tooltip: "Share Photo",
+                onPressed: () {
+                  final box = btnContext.findRenderObject() as RenderBox?;
+                  final origin = box != null
+                      ? box.localToGlobal(Offset.zero) & box.size
+                      : null;
+                  galleryController.shareImage(image, sharePositionOrigin: origin);
+                },
+              );
+            },
           ),
           const SizedBox(width: 8),
         ],
