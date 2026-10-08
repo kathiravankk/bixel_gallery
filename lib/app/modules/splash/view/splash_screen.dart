@@ -47,10 +47,9 @@ class SplashScreen extends GetView<SplashController> {
               children: [
                 // Logo Icon
                 Container(
-                  width: 90,
-                  height: 90,
+                  width: 96,
+                  height: 96,
                   decoration: BoxDecoration(
-                    gradient: AppColors.primaryGradient,
                     borderRadius: BorderRadius.circular(24),
                     boxShadow: [
                       BoxShadow(
@@ -60,11 +59,11 @@ class SplashScreen extends GetView<SplashController> {
                       ),
                     ],
                   ),
-                  child: const Center(
-                    child: Icon(
-                      Icons.photo_library_rounded,
-                      size: 46,
-                      color: AppColors.blackColor,
+                  child: ClipRRect(
+                    borderRadius: BorderRadius.circular(24),
+                    child: Image.asset(
+                      'assets/images/app_icon.png',
+                      fit: BoxFit.cover,
                     ),
                   ),
                 ),
